@@ -1,13 +1,14 @@
 package com.pfc2.weather.pruebatecnica.adapter;
 
-import com.pfc2.weather.pruebatecnica.config.WebClientConfiguration;
+import com.pfc2.weather.pruebatecnica.exception.WeatherCustomException;
 import com.pfc2.weather.pruebatecnica.model.WeatherData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+
 
 @Slf4j
 @Component
@@ -20,25 +21,29 @@ public class WeatherAdapter {
     @Value("service.weather.api-id")
     private String apiId;
 
-    public Mono<WeatherData> getInfoByCord(Double lat, Double longi){
-        return wtServiceWebClient.get().uri(uriBuilder -> uriBuilder
-                .path(uriWeather)
-                .queryParam("lat", lat)
-                .queryParam("lon", longi)
-                .queryParam("appid", apiId)
-                .build())
-                .retrieve()
-                .bodyToMono(WeatherData.class)
-                .onErrorResume(e ->{
-                    log.error(e.getMessage());
-                    return Mono.error(new WeatherStatusAdapterException(e.getMessage()));
-                });
+    public WeatherData getInfoByCord(Double lat, Double longi){
+        try
+        {
+            return wtServiceWebClient.get().uri(uriBuilder -> uriBuilder
+                            .path(uriWeather)
+                            .queryParam("lat", lat)
+                            .queryParam("lon", longi)
+                            .queryParam("appid", apiId)
+                            .build())
+                    .retrieve()
+                    .bodyToMono(WeatherData.class)
+                    .block();
+
+        }catch (WebClientResponseException ex) {
+            log.error(ex.getMessage());
+            throw new WeatherCustomException("Error al hacer la solicitud");
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+            throw new WeatherCustomException("Error inesperado al hacer la solicitud");
+        }
+
 
     }
-    public static class WeatherStatusAdapterException extends RuntimeException {
-        private WeatherStatusAdapterException(String log) {
-            super(log, null);
-        }
-    }
+
 
 }

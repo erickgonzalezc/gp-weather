@@ -13,5 +13,5 @@ public class WeatherHistoryResponse {
     private String weather;
     private Double tempMin;
     private Double tempMax;
-    private Double humidity;
+    private Integer humidity;
 }
